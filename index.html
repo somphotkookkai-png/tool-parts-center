@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>อะไหล่เครื่องมือช่าง | TOOL PARTS CENTER</title>
+<style>
+:root{--red:#d62828;--blue:#124e96;--yellow:#ffd43b;--ink:#202938;--muted:#667085;--bg:#f5f7fb}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+header{background:linear-gradient(110deg,var(--blue),#0b2e59);color:white;padding:22px 16px}
+.wrap{max-width:1150px;margin:auto}.brand{display:flex;align-items:center;gap:12px}.logo{background:var(--yellow);color:#111;padding:10px;border-radius:12px;font-size:26px}
+h1{font-size:clamp(22px,4vw,34px);margin:0}.tag{margin:4px 0 0;color:#e5edff}
+.hero{margin:18px auto 0;background:white;color:var(--ink);padding:18px;border-radius:16px;border-left:7px solid var(--red)}
+.hero strong{color:var(--blue);font-size:20px}.hero p{margin:6px 0 0;color:var(--muted)}
+main{padding:22px 16px}.tools{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+input,select{width:100%;padding:13px 14px;border:1px solid #d0d5dd;border-radius:10px;font:inherit;background:white}
+.categories{display:flex;gap:8px;overflow:auto;padding:3px 0 14px}
+.cat{white-space:nowrap;border:0;border-radius:999px;padding:9px 14px;background:#e8eef8;color:var(--blue);font-weight:650}
+.cat.active{background:var(--yellow);color:#222}
+.status{color:var(--muted);font-size:14px;margin:8px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.card{background:white;border-radius:14px;overflow:hidden;box-shadow:0 3px 14px #162b4d12;display:flex;flex-direction:column}
+.photo{height:150px;background:#eef2f7;display:flex;align-items:center;justify-content:center;color:#98a2b3;font-size:42px}
+.photo img{width:100%;height:100%;object-fit:cover}
+.info{padding:13px;display:flex;flex-direction:column;gap:7px;flex:1}
+.brandtag{font-size:12px;font-weight:700;color:var(--blue)}
+.name{font-weight:700;line-height:1.35}.code{font-size:12px;color:var(--muted)}
+.price{font-size:20px;color:var(--red);font-weight:800;margin-top:auto}
+.buy{display:block;text-align:center;background:#06c755;color:white;text-decoration:none;padding:11px;border-radius:9px;font-weight:750;margin-top:7px}
+.empty{background:white;padding:28px;text-align:center;border-radius:12px;color:var(--muted);grid-column:1/-1}
+footer{text-align:center;color:var(--muted);padding:25px 15px;font-size:13px}
+@media(min-width:650px){.tools{grid-template-columns:2fr 1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><div class="logo">🔧</div><div><h1>อะไหล่เครื่องมือช่าง</h1><div class="tag">TOOL PARTS CENTER · ตรงรุ่น ส่งไว</div></div></div>
+  <div class="hero"><strong>ค้นหาอะไหล่เครื่องมือช่างได้ง่าย ๆ</strong><p>เลือกยี่ห้อหรือพิมพ์ชื่อสินค้า แล้วกด LINE เพื่อสอบถามและสั่งซื้อ</p></div>
+</div></header>
+<main class="wrap">
+  <div class="tools">
+    <input id="q" type="search" placeholder="ค้นหาชื่อสินค้า เช่น แปรงถ่าน, เฟืองสว่าน">
+    <select id="sort"><option value="default">เรียงตามรายการ</option><option value="low">ราคาน้อยไปมาก</option><option value="high">ราคามากไปน้อย</option></select>
+  </div>
+  <nav class="categories" id="cats"></nav>
+  <div class="status" id="status">กำลังโหลดสินค้า…</div>
+  <section class="grid" id="products"></section>
+</main>
+<footer>อะไหล่เครื่องมือช่าง · TOOL PARTS CENTER<br>สั่งซื้อผ่าน LINE: @649dguzy</footer>
+<script>
+const LINE_ID='@649dguzy';
+let all=[], active='ทั้งหมด';
+const $=id=>document.getElementById(id);
+function parseCSV(text){
+  const rows=[]; let row=[], cell='', quoted=false;
+  for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];
+    if(c==='"'&&quoted&&n==='"'){cell+='"';i++}
+    else if(c==='"'){quoted=!quoted}
+    else if(c===','&&!quoted){row.push(cell);cell=''}
+    else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&n==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell=''}
+    else cell+=c;
+  }
+  row.push(cell);if(row.some(x=>x.trim()))rows.push(row);
+  const headers=(rows.shift()||[]).map(x=>x.trim());
+  return rows.map(r=>Object.fromEntries(headers.map((h,i)=>[h,(r[i]||'').trim()])));
+}
+function money(v){const n=Number(v);return Number.isFinite(n)&&v!==''?'฿'+n.toLocaleString('th-TH',{maximumFractionDigits:2}):'สอบถามราคา'}
+function renderCats(){
+ const brands=['ทั้งหมด',...new Set(all.map(p=>p.brand).filter(Boolean))];
+ $('cats').innerHTML=brands.map(b=>`<button class="cat ${b===active?'active':''}" data-brand="${esc(b)}">${esc(b)}</button>`).join('');
+ $('cats').querySelectorAll('button').forEach(b=>b.onclick=()=>{active=b.dataset.brand;renderCats();render()});
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ let list=all.filter(p=>(active==='ทั้งหมด'||p.brand===active)&&(`${p.name} ${p.brand} ${p.code}`.toLowerCase().includes($('q').value.trim().toLowerCase())));
+ if($('sort').value==='low')list.sort((a,b)=>(+a.price||0)-(+b.price||0));
+ if($('sort').value==='high')list.sort((a,b)=>(+b.price||0)-(+a.price||0));
+ $('status').textContent=`พบสินค้า ${list.length.toLocaleString('th-TH')} รายการ`;
+ $('products').innerHTML=list.length?list.map(p=>{
+   const msg=encodeURIComponent(`สนใจสินค้า: ${p.name} | ยี่ห้อ: ${p.brand} | รหัส: ${p.code} | ราคา: ${money(p.price)}`);
+   return `<article class="card"><div class="photo">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:'🔩'}</div><div class="info"><div class="brandtag">${esc(p.brand)}</div><div class="name">${esc(p.name)}</div><div class="code">รหัสสินค้า: ${esc(p.code||'-')}</div><div class="price">${money(p.price)}</div><a class="buy" target="_blank" rel="noopener" href="https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${msg}">สั่งซื้อทาง LINE</a></div></article>`;
+ }).join(''):'<div class="empty">ไม่พบสินค้า ลองค้นหาด้วยคำอื่น</div>';
+}
+$('q').addEventListener('input',render);$('sort').addEventListener('change',render);
+fetch('products.csv').then(r=>{if(!r.ok)throw Error('โหลด products.csv ไม่สำเร็จ');return r.text()}).then(t=>{all=parseCSV(t);renderCats();render()}).catch(e=>{$('status').textContent='ยังโหลดรายการสินค้าไม่ได้';$('products').innerHTML='<div class="empty">ตรวจสอบว่ามีไฟล์ products.csv อยู่ในโฟลเดอร์เดียวกับเว็บไซต์</div>'});
+</script>
+</body></html>
